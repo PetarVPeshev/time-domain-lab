@@ -1,0 +1,43 @@
+function loss_tangent = charact_loss(reference, sample, sample_width, ...
+    freq_limit, num_loss_tangent_points)
+%CHARACT_LOSS Summary of this function goes here
+%   Detailed explanation goes here
+    c = physconst('LightSpeed');
+    fs_impedance = 376.730313668;
+
+    freq = reference.f(reference.f <= freq_limit);
+    loss_tangent = linspace(0, 1, num_loss_tangent_points);
+    
+    [FREQ, LOSS_TANGENT] = meshgrid(freq, loss_tangent);
+    
+    sample_impedance = fs_impedance * (1 + 0.5j * LOSS_TANGENT) ...
+        / sqrt(sample.permittivity);
+    
+    sample_beta = 2 * pi * FREQ * sqrt(sample.permittivity) / c;
+    sample_alpha = 2 * pi * FREQ .* 0.5 .* LOSS_TANGENT ...
+        * sqrt(sample.permittivity) / c;
+    sample_kz = sample_beta - 1j * sample_alpha;
+    
+    gamma_b = (fs_impedance - sample_impedance) ...
+        ./ (fs_impedance + sample_impedance);
+    
+    input_impedance_a = sample_impedance .* (fs_impedance ...
+        + 1j * sample_impedance .* tan(sample_kz * sample_width)) ...
+        ./ (sample_impedance + 1j * fs_impedance ...
+        * tan(sample_kz * sample_width));
+    gamma_a = (input_impedance_a - fs_impedance) ...
+        ./ (input_impedance_a + fs_impedance);
+    
+    vwr_calc = exp(1j * sample_kz * sample_width) ...
+        .* exp(- 1j * sample_kz * sample_width) .* (1 + gamma_b ...
+        .* exp(-1j * sample_kz * 2 * sample_width)) ...
+        ./ ((1 + gamma_b) .* (1 + gamma_a));
+    vwr_meas = reference.fft(reference.f <= freq_limit)' ...
+        ./ sample.fft(reference.f <= freq_limit)';
+    vwr_meas = vwr_meas / max(abs(vwr_meas));
+    
+    [~, loss_tangent_idx] = min(abs(imag(vwr_calc) - imag(vwr_meas)), ...
+        [], 1);
+    loss_tangent = loss_tangent(loss_tangent_idx);
+end
+
