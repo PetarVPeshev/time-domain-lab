@@ -79,6 +79,19 @@ sgtitle('Measurement @ 300 Samples Average', 'FontWeight', 'bold', ...
     'FontSize', 11);
 saveas(gcf, ['figures\td_' char(sample.material) '.fig']);
 
+%% PLOT REFERENCE SIGNAL
+figure('Position', [250 250 800 400]);
+plot(ref.t * 1e12, ref.s, ...
+    'LineWidth', 2.0, 'DisplayName', 'ref');
+grid on;
+legend show;
+legend('location', 'bestoutside');
+ylabel('signal / V');
+xlabel('t / ps');
+title('Time-Gated');
+title('Reference Signal @ 300 Samples Average');
+saveas(gcf, 'figures\ref_sig.fig');
+
 %% PLOT FFT
 % Time-gated
 max_ref_psd = max(ref.psd);
