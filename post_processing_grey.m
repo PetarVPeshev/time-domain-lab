@@ -9,52 +9,54 @@ end
 dielectric_constant;
 
 meas_directory = 'measurements';
-
-sample_width = 525 * 1e-6;
-
-freq_limit_loss_tangent = 2.5 * 1e12;
-ref_tgate = 22 * 1e-12;
-sample_tgate = 25.5 * 1e-12;
-
-%% MEASUREMENT FILE NAMES
 ref_name = 'Air-300avgs';
 sample_name = 'Gray-525um-300avgs';
 
+d = 525 * 1e-6;
+
+freq_lim = 2.5 * 1e12;
+ref_tgate = 22 * 1e-12;
+sample_tgate = 25.5 * 1e-12;
+
 %% READ MEASUREMENT
-ref_meas = read_meas(meas_directory, ref_name);
-sample_meas = read_meas(meas_directory, sample_name);
+ref = read_meas(meas_directory, ref_name);
+sample = read_meas(meas_directory, sample_name);
 
 %% TIME GATE
-ref_meas = get_time_gate(ref_meas, ref_tgate);
-sample_meas = get_time_gate(sample_meas, sample_tgate);
+ref = get_time_gate(ref, ref_tgate);
+sample = get_time_gate(sample, sample_tgate);
 
 %% SAMPLE FFT
 % Time-gated
-ref_meas = meas_fft(ref_meas, 'TimeGated');
-sample_meas = meas_fft(sample_meas, 'TimeGated');
+ref = meas_fft(ref, 'TimeGated');
+sample = meas_fft(sample, 'TimeGated');
 % Non-time-gated
-ref_meas_norm = meas_fft(ref_meas, 'Measured');
-sample_meas_norm = meas_fft(sample_meas, 'Measured');
+ref_norm = meas_fft(ref, 'Measured');
+sample_norm = meas_fft(sample, 'Measured');
 
 %% MATERIAL CHARACTERIZATION
-[sample_meas.permittivity, sample_meas.material] ...
-    = charact_material(ref_meas, sample_meas, sample_width, ...
+% Time-gated
+[sample.er, sample.material] = charact_material(ref, sample, d, ...
     permittivity_list);
-[sample_meas_norm.permittivity, sample_meas_norm.material] ...
-    = charact_material(ref_meas_norm, sample_meas_norm, sample_width, ...
-    permittivity_list);
+% Non-time-gated
+[sample_norm.er, sample_norm.material] = charact_material(ref, sample, ...
+    d, permittivity_list);
 
 %% LOSS TANGENT
-sample.loss_tangent = charact_loss(ref_meas_norm, sample_meas_norm, sample_width, ...
-    freq_limit_loss_tangent, [1e-12 1e-8], 10001);
+% Time-gated
+[sample.tand, sample.alpha] = charact_loss(ref, sample, d, freq_lim, ...
+    [1e-12 0.04], 1e6);
+% Non-time-gated
+[sample_norm.tand, sample_norm.alpha] = charact_loss(ref_norm, ...
+    sample_norm, d, freq_lim, [1e-12 0.04], 1e6);
 
 %% PLOT MEASUREMENT
 figure('Position', [250 250 850 500]);
 subplot(2, 1, 1);
-plot(ref_meas.t * 1e12, ref_meas.s, ...
+plot(ref.t * 1e12, ref.s, ...
     'LineWidth', 2.0, 'DisplayName', 'ref');
 hold on;
-plot(sample_meas.t * 1e12, sample_meas.s, ...
+plot(sample.t * 1e12, sample.s, ...
     'LineWidth', 2.0, 'DisplayName', 'sample');
 grid on;
 legend show;
@@ -62,10 +64,10 @@ legend('location', 'bestoutside');
 ylabel('signal / V');
 title('Non-Time-Gated');
 subplot(2, 1, 2);
-plot(ref_meas.t * 1e12, ref_meas.s_tg, ...
+plot(ref.t * 1e12, ref.s_tg, ...
     'LineWidth', 2.0, 'DisplayName', 'ref');
 hold on;
-plot(sample_meas.t * 1e12, sample_meas.s_tg, ...
+plot(sample.t * 1e12, sample.s_tg, ...
     'LineWidth', 2.0, 'DisplayName', 'sample');
 grid on;
 legend show;
@@ -75,16 +77,16 @@ xlabel('t / ps');
 title('Time-Gated');
 sgtitle('Measurement @ 300 Samples Average', 'FontWeight', 'bold', ...
     'FontSize', 11);
-saveas(gcf, ['figures\td_' char(sample_meas.material) '.fig']);
+saveas(gcf, ['figures\td_' char(sample.material) '.fig']);
 
 %% PLOT FFT
 % Time-gated
-max_ref_psd = max(ref_meas.psd);
+max_ref_psd = max(ref.psd);
 figure('Position', [250 250 750 400]);
-plot(ref_meas.f * 1e-12, 10 * log10(ref_meas.psd / max_ref_psd), ...
+plot(ref.f * 1e-12, 10 * log10(ref.psd / max_ref_psd), ...
     'LineWidth', 2.0, 'DisplayName', 'ref');
 hold on;
-plot(sample_meas.f * 1e-12, 10 * log10(sample_meas.psd / max_ref_psd), ...
+plot(sample.f * 1e-12, 10 * log10(sample.psd / max_ref_psd), ...
     'LineWidth', 2.0, 'DisplayName', 'sample');
 grid on;
 xlim([0 10]);
@@ -93,14 +95,14 @@ legend('location', 'bestoutside');
 xlabel('f / THz');
 ylabel('PSD / dB');
 title('Measurement Normalized PSD @ 300 Samples Average, Time-Gated');
-saveas(gcf, ['figures\psd_' char(sample_meas.material) '_tg.fig']);
+saveas(gcf, ['figures\psd_' char(sample.material) '_tg.fig']);
 % Non-time-gated
-max_ref_norm_psd = max(ref_meas_norm.psd);
+max_ref_norm_psd = max(ref_norm.psd);
 figure('Position', [250 250 750 400]);
-plot(ref_meas_norm.f * 1e-12, 10 * log10(ref_meas_norm.psd ...
+plot(ref_norm.f * 1e-12, 10 * log10(ref_norm.psd ...
     / max_ref_norm_psd), 'LineWidth', 2.0, 'DisplayName', 'ref');
 hold on;
-plot(sample_meas_norm.f * 1e-12, 10 * log10(sample_meas_norm.psd ...
+plot(sample_norm.f * 1e-12, 10 * log10(sample_norm.psd ...
     / max_ref_norm_psd), 'LineWidth', 2.0, 'DisplayName', 'sample');
 grid on;
 xlim([0 10]);
@@ -109,21 +111,60 @@ legend('location', 'bestoutside');
 xlabel('f / THz');
 ylabel('PSD / dB');
 title('Measurement Normalized PSD @ 300 Samples Average, Non-Time-Gated');
-saveas(gcf, ['figures\psd_' char(sample_meas.material) '_non_tg.fig']);
+saveas(gcf, ['figures\psd_' char(sample.material) '_non_tg.fig']);
 
 %% PRINT MATERIAL
 fprintf('Material: %s, Measured permittivity: %.2f\n', ...
-    sample_meas.material, sample_meas.permittivity);
+    sample.material, sample.er);
 
 %% PLOT LOSS TANGENT
+% Time-gated
 figure('Position', [250 250 750 400]);
-plot(ref_meas.f(ref_meas.f <= freq_limit_loss_tangent) * 1e-12, ...
-    sample.loss_tangent, 'LineWidth', 2.0, 'DisplayName', 'tan\delta');
+plot(ref.f(ref.f <= freq_lim) * 1e-12, sample.tand, ...
+    'LineWidth', 2.0, 'DisplayName', 'tan\delta');
 grid on;
 legend show;
 legend('location', 'bestoutside');
 xlabel('f / THz');
-ylabel('tan\delta');
-title(['Loss Tangent @ ' char(sample_meas.material) ...
-    ', 300 Samples Average']);
-saveas(gcf, ['figures\loss_tangent_' char(sample_meas.material) '.fig']);
+ylabel('tan\{\delta\}');
+title(['Loss Tangent @ ' char(sample.material) ...
+    ', 300 Samples Average, Time-Gated']);
+saveas(gcf, ['figures\tand_' char(sample.material) '_tg.fig']);
+% Non-time-gated
+figure('Position', [250 250 750 400]);
+plot(ref_norm.f(ref.f <= freq_lim) * 1e-12, sample_norm.tand, ...
+    'LineWidth', 2.0, 'DisplayName', 'tan\delta');
+grid on;
+legend show;
+legend('location', 'bestoutside');
+xlabel('f / THz');
+ylabel('tan\{\delta\}');
+title(['Loss Tangent @ ' char(sample.material) ...
+    ', 300 Samples Average, Non-Time-Gated']);
+saveas(gcf, ['figures\tand_' char(sample.material) '_non_tg.fig']);
+
+%% PLOT ALPHA
+% Time-gated
+figure('Position', [250 250 750 400]);
+plot(ref.f(ref.f <= freq_lim) * 1e-12, sample.alpha, ...
+    'LineWidth', 2.0, 'DisplayName', 'tan\delta');
+grid on;
+legend show;
+legend('location', 'bestoutside');
+xlabel('f / THz');
+ylabel('\alpha');
+title(['\alpha @ ' char(sample.material) ', 300 Samples Average, ' ...
+    'Time-Gated']);
+saveas(gcf, ['figures\alpha_' char(sample.material) '_tg.fig']);
+% Non-time-gated
+figure('Position', [250 250 750 400]);
+plot(ref_norm.f(ref.f <= freq_lim) * 1e-12, sample_norm.alpha, ...
+    'LineWidth', 2.0, 'DisplayName', 'tan\delta');
+grid on;
+legend show;
+legend('location', 'bestoutside');
+xlabel('f / THz');
+ylabel('\alpha');
+title(['\alpha @ ' char(sample.material) ', 300 Samples Average, ' ...
+    'Non-Time-Gated']);
+saveas(gcf, ['figures\alpha_' char(sample.material) '_non_tg.fig']);

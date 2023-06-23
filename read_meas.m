@@ -2,8 +2,8 @@ function meas = read_meas(meas_directory, file_name)
 %READ_MEAS Summary of this function goes here
 %   Detailed explanation goes here
     meas = struct('t', [], 's', [], 's_tg', [], 'Ts', [], 'fft', [], ...
-        'f', [], 'psd', [], 'material', [], 'permittivity', [], ...
-        'loss_tangent', []);
+        'f', [], 'psd', [], 'material', [], 'er', [], 'tand', [], ...
+        'alpha', []);
 
     meas_data = importdata([meas_directory '\' file_name '.txt']);
     
