@@ -12,6 +12,7 @@ meas_directory = 'measurements';
 ref_name = 'Air-300avgs';
 sample_name = 'Gray-525um-300avgs';
 
+c = physconst('LightSpeed');
 d = 525 * 1e-6;
 
 freq_lim = 2.5 * 1e12;
@@ -91,6 +92,17 @@ xlabel('t / ps');
 title('Time-Gated');
 title('Reference Signal @ 300 Samples Average');
 saveas(gcf, 'figures\ref_sig.fig');
+figure('Position', [250 250 800 400]);
+plot(ref.t * 1e12, ref.s_tg, ...
+    'LineWidth', 2.0, 'DisplayName', 'ref');
+grid on;
+legend show;
+legend('location', 'bestoutside');
+ylabel('signal / V');
+xlabel('t / ps');
+title('Time-Gated');
+title('Reference Signal @ 300 Samples Average');
+saveas(gcf, 'figures\ref_sig_tg.fig');
 
 %% PLOT FFT
 % Time-gated
@@ -128,13 +140,13 @@ saveas(gcf, ['figures\psd_' char(sample.material) '_non_tg.fig']);
 
 %% PRINT MATERIAL
 fprintf('Material: %s, Measured permittivity: %.2f\n', ...
-    sample.material, sample.er);
+    sample_norm.material, sample_norm.er);
 
 %% PLOT LOSS TANGENT
 % Time-gated
 figure('Position', [250 250 750 400]);
 plot(ref.f(ref.f <= freq_lim) * 1e-12, sample.tand, ...
-    'LineWidth', 2.0, 'DisplayName', 'tan\delta');
+    'LineWidth', 2.0, 'DisplayName', 'tan\{\delta\}');
 grid on;
 legend show;
 legend('location', 'bestoutside');
@@ -146,7 +158,7 @@ saveas(gcf, ['figures\tand_' char(sample.material) '_tg.fig']);
 % Non-time-gated
 figure('Position', [250 250 750 400]);
 plot(ref_norm.f(ref.f <= freq_lim) * 1e-12, sample_norm.tand, ...
-    'LineWidth', 2.0, 'DisplayName', 'tan\delta');
+    'LineWidth', 2.0, 'DisplayName', 'tan\{\delta\}');
 grid on;
 legend show;
 legend('location', 'bestoutside');
@@ -157,27 +169,30 @@ title(['Loss Tangent @ ' char(sample.material) ...
 saveas(gcf, ['figures\tand_' char(sample.material) '_non_tg.fig']);
 
 %% PLOT ALPHA
+lambda = c ./ ref.f(1 : 250);
 % Time-gated
+alpha = 10 * log10(sample.alpha ./ lambda');
 figure('Position', [250 250 750 400]);
-plot(ref.f(ref.f <= freq_lim) * 1e-12, sample.alpha, ...
-    'LineWidth', 2.0, 'DisplayName', 'tan\delta');
+plot(ref.f(ref.f <= freq_lim) * 1e-12, alpha, ...
+    'LineWidth', 2.0, 'DisplayName', '\alpha');
 grid on;
 legend show;
 legend('location', 'bestoutside');
 xlabel('f / THz');
-ylabel('\alpha');
-title(['\alpha @ ' char(sample.material) ', 300 Samples Average, ' ...
-    'Time-Gated']);
+ylabel('\alpha / dB/\lambda');
+title(['Attenuation Constant @ ' char(sample.material) ...
+    ', 300 Samples Average, Time-Gated']);
 saveas(gcf, ['figures\alpha_' char(sample.material) '_tg.fig']);
 % Non-time-gated
+alpha_norm = 10 * log10(sample_norm.alpha ./ lambda');
 figure('Position', [250 250 750 400]);
-plot(ref_norm.f(ref.f <= freq_lim) * 1e-12, sample_norm.alpha, ...
-    'LineWidth', 2.0, 'DisplayName', 'tan\delta');
+plot(ref_norm.f(ref.f <= freq_lim) * 1e-12, alpha_norm, ...
+    'LineWidth', 2.0, 'DisplayName', '\alpha');
 grid on;
 legend show;
 legend('location', 'bestoutside');
 xlabel('f / THz');
-ylabel('\alpha');
-title(['\alpha @ ' char(sample.material) ', 300 Samples Average, ' ...
-    'Non-Time-Gated']);
+ylabel('\alpha / dB/\lambda');
+title(['Attenuation Constant @ ' char(sample.material) ...
+    ', 300 Samples Average, Non-Time-Gated']);
 saveas(gcf, ['figures\alpha_' char(sample.material) '_non_tg.fig']);
