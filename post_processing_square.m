@@ -9,10 +9,13 @@ end
 dielectric_constant;
 
 meas_directory = 'measurements';
-ref_name = 'Air-300avgs';
-sample_name = 'square-3080um-300avgs';
+% ref_name = 'Air-300avgs';
+% sample_name = 'square-3080um-300avgs';
+ref_name = '220228-NoSample-100avgs_nh';
+sample_name = '220228-Goretex-100avgs_nh';
 
-d = 3080 * 1e-6;
+% d = 3080 * 1e-6;
+d = 3 * 1e-3;
 
 freq_lim = 2.5 * 1e12;
 ref_tgate = 22 * 1e-12;
@@ -45,10 +48,10 @@ sample_norm = meas_fft(sample, 'Measured');
 %% LOSS TANGENT
 % Time-gated
 [sample.tand, sample.alpha] = charact_loss(ref, sample, d, freq_lim, ...
-    [1e-12 0.02], 1e6);
+    [1e-12 0.007], 1e6);
 % Non-time-gated
 [sample_norm.tand, sample_norm.alpha] = charact_loss(ref_norm, ...
-    sample_norm, d, freq_lim, [1e-12 0.02], 1e6);
+    sample_norm, d, freq_lim, [1e-12 0.007], 1e6);
 
 %% PLOT MEASUREMENT
 figure('Position', [250 250 850 500]);
